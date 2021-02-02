@@ -1,5 +1,8 @@
 version: '3.7'
 services:
+  notifications:
+    build:
+      context: ./notifications
   server:
     image: bidmcdigitalpsychiatry/lamp-server:2020
     healthcheck:
@@ -7,77 +10,28 @@ services:
     environment:
       HTTPS: 'off'
       ROOT_KEY: '32_BIT_ENCRYPTION_KEY_HERE'
-      CDB: 'http://admin:DB_PASSSWORD_HERE@database:5984/'
-      PUSH_API_GATEWAY: 'https://app-gateway.lamp.digital/push'
+      CDB: 'http://admin:password@database:5984/'
+      PUSH_API_GATEWAY: 'http://notifications:3000/push'
       PUSH_API_KEY: 'YOUR_PUSH_KEY_HERE'
       DASHBOARD_URL: 'dashboard.lamp.digital'
       REDIS_HOST: 'redis://cache:6379/0'
       NATS_SERVER: 'message_queue:4222'
-    networks:
-      - public
-    deploy:
-      mode: replicated
-      update_config:
-        order: start-first
-        failure_action: rollback
-      labels:
-        traefik.enable: 'true'
-        traefik.http.routers.lamp_server.entryPoints: 'websecure'
-        traefik.http.routers.lamp_server.rule: 'Host(`api.example.com`)'
-        traefik.http.routers.lamp_server.tls.certresolver: 'default'
-        traefik.http.services.lamp_server.loadbalancer.server.port: 3000
-      placement:
-        constraints:
-          - node.role == manager
   database:
     image: apache/couchdb:3.1.1
     healthcheck:
       test: curl --fail --silent http://localhost:5984/_up || exit 1
     environment:
       COUCHDB_USER: 'admin'
-      COUCHDB_PASSWORD: 'DB_PASSWORD_HERE'
+      COUCHDB_PASSWORD: 'password'
     volumes:
-      - /data/couchdb:/opt/couchdb/data
-    networks:
-      - public
-    deploy:
-      mode: replicated
-      update_config:
-        order: stop-first
-        failure_action: rollback
-      labels:
-        traefik.enable: 'true'
-        traefik.http.routers.lamp_database.entryPoints: 'websecure'
-        traefik.http.routers.lamp_database.rule: 'Host(`db.example.com`)'
-        traefik.http.routers.lamp_database.tls.certresolver: 'default'
-        traefik.http.services.lamp_database.loadbalancer.server.port: 5984
-      placement:
-        constraints:
-          - node.role == manager
+      - data-volume:/opt/couchdb/data
   cache:
     image: redis:6.0.8-alpine
     healthcheck:
       test: redis-cli ping
-    deploy:
-      mode: replicated
-      update_config:
-        order: stop-first
-        failure_action: rollback
-      placement:
-        constraints:
-          - node.role == manager
   message_queue:
     image: nats:2.1.9-alpine3.12
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8222/varz || exit 1
-    deploy:
-      mode: replicated
-      update_config:
-        order: start-first
-        failure_action: rollback
-      placement:
-        constraints:
-          - node.role == manager
-networks:
-  public:
-    external: true
+volumes:
+  data-volume:
