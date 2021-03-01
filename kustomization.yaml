@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: mindlamp
+resources:
+  - api.yaml
+  - redis-cache.yaml
+  - dashboard.yaml
+  - couchdb.yaml
+  - message-queue.yaml
+  - notifications.yaml
+  - ingress.yaml
+secretGenerator:
+- name: mindlamp-config
+  env: mindlamp-config.env

@@ -1,21 +1,29 @@
 version: '3.7'
 services:
   notifications:
+    image: mock-notifications:0.0.1
     build:
       context: ./notifications
+  dashboard:
+    image: bidmcdigitalpsychiatry/lamp-dashboard:2021.2.12
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost || exit 1
+    ports:
+      - '8080:80'
   server:
-    image: bidmcdigitalpsychiatry/lamp-server:2020
+    image: bidmcdigitalpsychiatry/lamp-server:2021.2.12
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
     environment:
-      HTTPS: 'off'
-      ROOT_KEY: '32_BIT_ENCRYPTION_KEY_HERE'
+      ROOT_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
       CDB: 'http://admin:password@database:5984/'
       PUSH_API_GATEWAY: 'http://notifications:3000/push'
       PUSH_API_KEY: 'YOUR_PUSH_KEY_HERE'
-      DASHBOARD_URL: 'dashboard.lamp.digital'
+      DASHBOARD_URL: 'localhost:3000'
       REDIS_HOST: 'redis://cache:6379/0'
       NATS_SERVER: 'message_queue:4222'
+    ports:
+      - '3000:3000'
   database:
     image: apache/couchdb:3.1.1
     healthcheck:
@@ -25,13 +33,20 @@ services:
       COUCHDB_PASSWORD: 'password'
     volumes:
       - data-volume:/opt/couchdb/data
+    ports:
+      - '5984:5984'
   cache:
     image: redis:6.0.8-alpine
     healthcheck:
       test: redis-cli ping
+    ports:
+      - '6379:6379'
   message_queue:
     image: nats:2.1.9-alpine3.12
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8222/varz || exit 1
+    ports:
+      - '4222:4222'
+      - '8222:8222'
 volumes:
   data-volume:

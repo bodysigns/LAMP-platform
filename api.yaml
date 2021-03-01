@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      initContainers:
+        - name: wait-for-couchdb
+          image: curlimages/curl
+          args:
+          - /bin/sh
+          - -c
+          - >
+            set -x;
+            while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://couchdb:5984/_up)" != "200" ]]; do 
+              echo '.';
+              sleep 15;
+            done
+      containers:
+        - name: api
+          image: bidmcdigitalpsychiatry/lamp-server:2021.2.12
+          envFrom:
+          - secretRef:
+              name: mindlamp-config
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  type: ClusterIP
+  selector:
+    app: api
+  ports:
+    - name: "3000"
+      port: 3000
+      targetPort: 3000
