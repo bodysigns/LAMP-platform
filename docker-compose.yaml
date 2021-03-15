@@ -1,6 +1,7 @@
 version: '3.7'
 services:
   notifications:
+    image: mock-notifications:0.0.1
     build:
       context: ./notifications
   dashboard:

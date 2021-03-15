@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-queue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-queue
+  template:
+    metadata:
+      labels:
+        app: message-queue
+    spec:
+      containers:
+        - name: message-queue
+          image: nats:2.1.9-alpine3.12
+          ports:
+            - name: nats-client
+              containerPort: 4222
+              protocol: TCP
+            - name: nats-management
+              containerPort: 8222
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /varz
+              port: 8222
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: message-queue
+spec:
+  type: ClusterIP
+  selector:
+    app: message-queue
+  ports:
+    - name: "4222"
+      port: 4222
+      targetPort: 4222
+    - name: "8222"
+      port: 8222
+      targetPort: 8222

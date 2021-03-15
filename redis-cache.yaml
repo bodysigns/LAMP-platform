@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cache
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+    spec:
+      containers:
+        - name: redis-cache
+          image: redis:6.0.8-alpine
+          ports:
+            - name: redis 
+              containerPort: 6379
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cache
+spec:
+  type: ClusterIP
+  selector:
+    app: redis-cache
+  ports:
+    - name: "6379"
+      port: 6379
+      targetPort: 6379

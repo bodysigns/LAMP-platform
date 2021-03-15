@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: couchdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: couchdb
+  template:
+    metadata:
+      labels:
+        app: couchdb
+    spec:
+      containers:
+        - name: couchdb
+          envFrom:
+          - secretRef:
+              name: mindlamp-config
+          image: apache/couchdb:3.1.1
+          ports:
+            - name: couchdb
+              containerPort: 5984
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /opt/couchdb/data
+              name: data-volume
+          livenessProbe:
+            httpGet:
+              path: /_up
+              port: 5984
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: data-volume
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-volume
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 25Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb
+spec:
+  type: ClusterIP
+  ports:
+    - name: "5984"
+      port: 5984
+      targetPort: 5984
+  selector:
+    app: couchdb
